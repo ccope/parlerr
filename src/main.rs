@@ -1,5 +1,5 @@
 #![allow(unused_imports)]
-use std::{borrow::Borrow, collections::HashSet, fmt::Debug};
+use std::{borrow::Borrow, collections::HashSet, fmt::Debug, fmt::Display};
 use std::collections::hash_map::RandomState;
 use std::iter::FromIterator;
 use std::fs::{
@@ -55,11 +55,13 @@ fn process_inputs(paths: Vec<PathBuf>, keys: &RwLock<HashSet<String>>) {
 fn parse(path: &PathBuf, keys: &RwLock<HashSet<String>>) -> Result<()> {
     let s = read_to_string(path)?;
     let json: Value = serde_json::from_str(&s)?;
-    if !json.is_object() {
+    if !(json.is_array() && json[0].is_object()) {
+        event!(Level::TRACE, "Not a map");
         return Err(eyre!("not a map"))
     }
     //let new_keys = HashSet::<String>::from_iter(json.as_object().unwrap().keys().cloned());
-    let new_keys = HashSet::<&String>::from_iter(json.as_object().unwrap().keys());
+    let new_keys = HashSet::<&String>::from_iter(json[0].as_object().unwrap().keys());
+    event!(Level::TRACE, "Length of new keys is {}", new_keys.len());
     if is_left_ref_subset(&new_keys, &keys.read()) {
         return Ok(())
     }
