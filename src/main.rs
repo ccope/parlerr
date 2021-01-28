@@ -12,7 +12,7 @@ use std::path::{Path, PathBuf};
 
 use color_eyre::eyre::{Result, eyre};
 use color_eyre::{eyre::Report, eyre::WrapErr, Section};
-use indicatif::ParallelProgressIterator;
+use indicatif::{ParallelProgressIterator, ProgressBar};
 use parking_lot::RwLock;
 use rayon::prelude::*;
 use serde_json::Value;
@@ -39,10 +39,10 @@ fn get_inputs(dir: &Path) -> Result<Vec<PathBuf>> {
 }
 
 #[instrument]
-fn process_inputs(paths: Vec<PathBuf>, keys: &RwLock<HashSet<String>>) {
+fn process_inputs(pb: ProgressBar, paths: Vec<PathBuf>, keys: &RwLock<HashSet<String>>) {
     span!(Level::TRACE, "iter_paths");
     paths.into_par_iter()
-        .progress()
+        .progress_with(pb)
         .for_each(|path|
             match parse(&path, &keys) {
                 Ok(_) => (),
