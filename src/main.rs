@@ -15,9 +15,10 @@ use color_eyre::{eyre::Report, eyre::WrapErr, Section};
 use indicatif::{ParallelProgressIterator, ProgressBar};
 use parking_lot::RwLock;
 use rayon::prelude::*;
+use serde::Deserialize;
 use serde_json::Value;
-use tracing::{Level, Subscriber, event, instrument, span};
-use tracing_subscriber;
+use serde_json::value::RawValue;
+use tracing::{Level, event, instrument, span};
 
 //use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 
@@ -30,7 +31,7 @@ fn is_left_ref_subset(left: &HashSet<&String, RandomState>, right: &HashSet<Stri
 //    *left.filter(|v| !*right.contains(*v)).collect()
 //}
 
-#[instrument]
+//#[instrument]
 fn get_inputs(dir: &Path) -> Result<Vec<PathBuf>> {
     span!(Level::TRACE, "get_inputs");
     Ok(read_dir(dir)?
@@ -38,20 +39,22 @@ fn get_inputs(dir: &Path) -> Result<Vec<PathBuf>> {
         .collect())
 }
 
-#[instrument]
-fn process_inputs(pb: ProgressBar, paths: Vec<PathBuf>, keys: &RwLock<HashSet<String>>) {
+//#[instrument]
+fn process_inputs(paths: Vec<PathBuf>, keys: &RwLock<HashSet<String>>) {
     span!(Level::TRACE, "iter_paths");
+    let pb = ProgressBar::new(paths.len() as u64);
+    pb.set_draw_delta((paths.len()/100) as u64);
     paths.into_par_iter()
         .progress_with(pb)
         .for_each(|path|
             match parse(&path, &keys) {
                 Ok(_) => (),
-                Err(e) => drop(e.wrap_err(format!("Path: {:?}", &path))),
+                Err(e) => drop(e),
         }
     )
 }
 
-#[instrument]
+//#[instrument]
 fn parse(path: &PathBuf, keys: &RwLock<HashSet<String>>) -> Result<()> {
     let s = read_to_string(path)?;
     let json: Value = serde_json::from_str(&s)?;
